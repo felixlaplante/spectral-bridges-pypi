@@ -193,9 +193,9 @@ class SpectralBridges:
         affinity = np.sqrt(affinity + affinity.T) / (np.sqrt(counts) * dists)
         affinity -= 0.5 * affinity.max()
 
-        q1, q3 = np.quantile(affinity, [0.1, 0.9])
+        q10, q90 = np.quantile(affinity, [0.1, 0.9])
 
-        gamma = np.log(self.M) / (q3 - q1)
+        gamma = np.log(self.M) / (q90 - q10)
         affinity = np.exp(gamma * affinity)
 
         spectralclustering = _SpectralClustering(
