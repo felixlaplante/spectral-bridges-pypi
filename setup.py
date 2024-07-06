@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name="spectral-bridges",
     version="0.1.0",
-    author="Your Name",
+    author="Félix Laplante",
     author_email="flheight0@gmail.com",
     description="Spectral Bridges clustering algorithm",
     long_description=open("README.md").read(),
