@@ -4,7 +4,7 @@ setup(
     name="spectral-bridges",
     version="0.1.0",
     author="Félix Laplante",
-    author_email="flheight0@gmail.com",
+    author_email="Félix Laplante <flheight0@gmail.com>",
     description="Spectral Bridges clustering algorithm",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
