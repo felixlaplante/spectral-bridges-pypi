@@ -187,8 +187,8 @@ class SpectralBridges:
         np.fill_diagonal(dists, 1)
 
         for i in range(self.n_nodes):
-            projs = np.dot(X_centered[i], segments[i].T)
-            affinity[i] = np.einsum("ij,ij->i", np.maximum(projs, 0))
+            projs = np.maximum(np.dot(X_centered[i], segments[i].T), 0)
+            affinity[i] = np.einsum("ij,ij->j", projs, projs)
 
         affinity = np.sqrt(affinity + affinity.T) / (np.sqrt(counts) * dists)
         affinity -= 0.5 * affinity.max()
