@@ -203,7 +203,7 @@ class SpectralBridges:
         )
         spectralclustering.fit(affinity)
 
-        self.clusters_ = [
+        self.cluster_centers_ = [
             kmeans.cluster_centers_[spectralclustering.labels_ == i]
             for i in range(self.n_clusters)
         ]
@@ -221,12 +221,14 @@ class SpectralBridges:
         numpy.ndarray
             Predicted cluster indices for each input data point.
         """
-        cluster_centers = np.vstack(self.clusters_)
-        cluster_cutoffs = np.cumsum([cluster.shape[0] for cluster in self.clusters_])
+        cluster_centers = np.vstack(self.cluster_centers_)
+        cluster_cutoffs = np.cumsum(
+            [cluster.shape[0] for cluster in self.cluster_centers_]
+        )
 
         index = faiss.IndexFlatL2(x.shape[1])
         index.add(cluster_centers.astype(np.float32))
         winners = index.search(x.astype(np.float32), 1)[1].ravel()
-        labels = np.searchsorted(cluster_cutoffs, winners, side="right") - 1
+        labels = np.searchsorted(cluster_cutoffs, winners, side="right")
 
         return labels
