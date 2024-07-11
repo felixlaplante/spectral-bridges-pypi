@@ -17,6 +17,8 @@ class _KMeans:
         Number of seeding trials for centroids initialization.
     random_state : int or None, optional, default=None
         Determines random number generation for centroid initialization.
+    optimize : float or None, optional, default=None
+        Determines minimum explained variance by PCA for centroid initialization
 
     Attributes:
     -----------
@@ -31,11 +33,49 @@ class _KMeans:
         Run k-means clustering on the input data X.
     """
 
-    def __init__(self, n_clusters, n_iter=20, n_local_trials=None, random_state=None):
+    def __init__(
+        self,
+        n_clusters,
+        n_iter=20,
+        n_local_trials=None,
+        random_state=None,
+        optimize=None,
+    ):
         self.n_clusters = n_clusters
         self.n_iter = n_iter
         self.n_local_trials = n_local_trials
         self.random_state = random_state
+        self.optimize = optimize
+
+    def _init_centroids(self, X):
+        if self.optimize is None:
+            return kmeans_plusplus(
+                X,
+                self.n_clusters,
+                n_local_trials=self.n_local_trials,
+                random_state=self.random_state,
+            )[0].astype(np.float32)
+
+        X_centered = X - np.mean(X, axis=0)
+        cov = np.cov(X_centered, rowvar=False)
+
+        eigvals, eigvecs = np.linalg.eigh(cov)
+
+        explained_var = np.cumsum(eigvals[::-1])
+        explained_var /= explained_var[-1]
+        num_components = np.searchsorted(explained_var, self.optimize) + 1
+
+        selected_eigenvectors = eigvecs[:, -num_components:]
+        X_pca = np.dot(X_centered, selected_eigenvectors)
+
+        return X[
+            kmeans_plusplus(
+                X_pca,
+                self.n_clusters,
+                n_local_trials=self.n_local_trials,
+                random_state=self.random_state,
+            )[1]
+        ].astype(np.float32)
 
     def fit(self, X):
         """Run k-means clustering on the input data X.
@@ -47,13 +87,8 @@ class _KMeans:
         """
         index = faiss.IndexFlatL2(X.shape[1])
         kmeans = faiss.Clustering(X.shape[1], self.n_clusters)
-        init_centroids = kmeans_plusplus(
-            X,
-            self.n_clusters,
-            n_local_trials=self.n_local_trials,
-            random_state=self.random_state,
-        )[0].astype(np.float32)
 
+        init_centroids = self._init_centroids(X)
         kmeans.centroids.resize(init_centroids.size)
         faiss.copy_array_to_vector(init_centroids.ravel(), kmeans.centroids)
         kmeans.niter = self.n_iter
@@ -74,8 +109,10 @@ class _SpectralClustering:
     -----------
     n_clusters : int
         The number of clusters to form.
-    random_state : int
+    random_state : int or None, optional, default=None
         Determines random number generation for centroid initialization.
+    optimize : float or None, optional, default=None
+        Determines minimum explained variance by PCA for centroid initialization
 
     Attributes:
     -----------
@@ -145,6 +182,7 @@ class SpectralBridges:
         n_iter=20,
         n_local_trials=None,
         random_state=None,
+        optimize=None,
     ):
         self.n_clusters = n_clusters
         self.n_nodes = n_nodes
@@ -152,6 +190,7 @@ class SpectralBridges:
         self.n_iter = n_iter
         self.n_local_trials = n_local_trials
         self.random_state = random_state
+        self.optimize = optimize
 
     def fit(self, X):
         """Fit the Spectral Bridges model on the input data X.
@@ -166,6 +205,7 @@ class SpectralBridges:
             n_iter=self.n_iter,
             n_local_trials=self.n_local_trials,
             random_state=self.random_state,
+            optimize=self.optimize,
         )
         kmeans.fit(X)
 
@@ -229,6 +269,7 @@ class SpectralBridges:
         index = faiss.IndexFlatL2(x.shape[1])
         index.add(cluster_centers.astype(np.float32))
         winners = index.search(x.astype(np.float32), 1)[1].ravel()
+
         labels = np.searchsorted(cluster_cutoffs, winners, side="right")
 
         return labels
