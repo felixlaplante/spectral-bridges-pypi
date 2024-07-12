@@ -1,11 +1,11 @@
 import numpy as np
-from sklearn.cluster import kmeans_plusplus
 from scipy.sparse.csgraph import laplacian
+import simsimd
 import faiss
 
 
 class _KMeans:
-    """K-means clustering using FAISS.
+    """K-means clustering using FAISS and SimSIMD.
 
     Parameters:
     -----------
@@ -43,6 +43,20 @@ class _KMeans:
         self.n_local_trials = n_local_trials
         self.random_state = random_state
 
+    def _init_centroids(self, X):
+        rng = np.random.default_rng(self.random_state)
+
+        centroids = np.empty((self.n_clusters, X.shape[1]), dtype=np.float32)
+        centroids[0] = X[rng.integers(X.shape[0])]
+        dists = np.full(X.shape[0], np.inf)
+
+        for i in range(1, self.n_clusters):
+            current_dists = simsimd.sqeuclidean(X, centroids[i - 1])
+            dists = np.minimum(dists, current_dists)
+            centroids[i] = X[dists.argmax()]
+
+        return centroids
+
     def fit(self, X):
         """Run k-means clustering on the input data X.
 
@@ -54,19 +68,14 @@ class _KMeans:
         index = faiss.IndexFlatL2(X.shape[1])
         kmeans = faiss.Clustering(X.shape[1], self.n_clusters)
 
-        init_centroids = kmeans_plusplus(
-            X,
-            self.n_clusters,
-            n_local_trials=self.n_local_trials,
-            random_state=self.random_state,
-        )[0].astype(np.float32)
+        init_centroids = self._init_centroids(X.astype(np.float32))
 
         kmeans.centroids.resize(init_centroids.size)
         faiss.copy_array_to_vector(init_centroids.ravel(), kmeans.centroids)
         kmeans.niter = self.n_iter
         kmeans.min_points_per_centroid = 0
         kmeans.max_points_per_centroid = -1
-        kmeans.train(X.astype(np.float32), index)
+        kmeans.train(X, index)
 
         self.cluster_centers_ = faiss.vector_to_array(kmeans.centroids).reshape(
             self.n_clusters, X.shape[1]
