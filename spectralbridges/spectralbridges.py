@@ -173,7 +173,6 @@ class SpectralBridges:
             n_iter=self.n_iter,
             n_local_trials=self.n_local_trials,
             random_state=self.random_state,
-            optimize=self.optimize,
         )
         kmeans.fit(X)
 
