@@ -53,7 +53,7 @@ class _KMeans:
         for i in range(1, self.n_clusters):
             current_dists = simsimd.sqeuclidean(X, centroids[i - 1])
             dists = np.minimum(dists, current_dists)
-            centroids[i] = X[dists.argmax()]
+            centroids[i] = X[rng.choice(X.shape[0], p=dists / dists.sum())]
 
         return centroids
 
