@@ -50,10 +50,22 @@ class _KMeans:
         centroids[0] = X[rng.integers(X.shape[0])]
         dists = np.full(X.shape[0], np.inf)
 
+        if self.n_local_trials is None:
+            self.n_local_trials = 2 + int(np.log(self.n_clusters))
+
         for i in range(1, self.n_clusters):
             current_dists = simsimd.sqeuclidean(X, centroids[i - 1])
             dists = np.minimum(dists, current_dists)
-            centroids[i] = X[rng.choice(X.shape[0], p=dists / dists.sum())]
+
+            candidates = rng.choice(
+                X.shape[0], size=self.n_local_trials, p=dists / dists.sum()
+            )
+            candidates_dists = np.array(simsimd.cdist(X, X[candidates], "sqeuclidean"))
+            inertias = np.minimum(candidates_dists, dists[:, None]).sum(axis=0)
+
+            best_candidate = candidates[inertias.argmin()]
+
+            centroids[i] = X[best_candidate]
 
         return centroids
 
@@ -120,7 +132,7 @@ class _SpectralClustering:
 
         eigvecs = np.linalg.eigh(L)[1]
         eigvecs = eigvecs[:, : self.n_clusters]
-        eigvecs /= np.linalg.norm(eigvecs, axis=1)[:, np.newaxis]
+        eigvecs /= np.linalg.norm(eigvecs, axis=1)[:, None]
         kmeans = _KMeans(self.n_clusters, random_state=self.random_state)
         kmeans.fit(eigvecs)
 
@@ -193,12 +205,9 @@ class SpectralBridges:
         ]
 
         counts = np.array([X_centered[i].shape[0] for i in range(self.n_nodes)])
-        counts = counts[np.newaxis, :] + counts[:, np.newaxis]
+        counts = counts[None, :] + counts[:, None]
 
-        segments = (
-            kmeans.cluster_centers_[np.newaxis, :]
-            - kmeans.cluster_centers_[:, np.newaxis]
-        )
+        segments = kmeans.cluster_centers_[None, :] - kmeans.cluster_centers_[:, None]
         dists = np.einsum("ijk,ijk->ij", segments, segments)
         np.fill_diagonal(dists, 1)
 
