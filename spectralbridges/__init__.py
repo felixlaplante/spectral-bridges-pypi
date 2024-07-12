@@ -1,4 +1,5 @@
 __version__ = "0.2.0"
+from spectralbridges import SpectralBridges
 
 """
 Spectral Bridges - A Python package for Spectral Bridges clustering algorithm.
