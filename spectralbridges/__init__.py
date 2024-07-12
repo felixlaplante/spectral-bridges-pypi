@@ -75,7 +75,7 @@ class _KMeans:
         kmeans.niter = self.n_iter
         kmeans.min_points_per_centroid = 0
         kmeans.max_points_per_centroid = -1
-        kmeans.train(X, index)
+        kmeans.train(X.astype(np.float32), index)
 
         self.cluster_centers_ = faiss.vector_to_array(kmeans.centroids).reshape(
             self.n_clusters, X.shape[1]
