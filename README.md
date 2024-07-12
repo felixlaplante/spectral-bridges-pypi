@@ -10,7 +10,7 @@ Spectral Bridges is a Python package that implements a novel clustering algorith
 
 ## Speed
 
-Starting with version 1.0.0, Spectral Bridges not only utilizes FAISS's efficient k-means implementation but also employs SimSIMD for centroid initialization. This combination results in a 3-4 times speed improvement.
+Starting with version 1.0.0, Spectral Bridges not only utilizes FAISS's efficient k-means implementation but also employs SimSIMD for centroid initialization. This combination results in a 2-3 times speed improvement.
 
 ## Installation
 
