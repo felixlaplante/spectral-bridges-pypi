@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="spectral-bridges",
-    version="0.2.2",
+    version="1.0.0",
     author="Félix Laplante",
     author_email="flheight0@gmail.com",
     description="Spectral Bridges clustering algorithm",
@@ -12,8 +12,8 @@ setup(
     packages=find_packages(),
     install_requires=[
         "numpy",
-        "scikit-learn",
         "scipy",
+        "simsimd",
         "faiss-cpu",
     ],
     classifiers=[
@@ -21,7 +21,7 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: MacOS :: MacOS X",
         "Operating System :: Microsoft :: Windows",
-        "Operating System :: POSIX",
+        "Operating System :: POSIX :: Linux",
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.8',
 )
