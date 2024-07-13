@@ -49,13 +49,14 @@ class _KMeans:
         centroids = np.empty((self.n_clusters, X.shape[1]), dtype=X.dtype)
         centroids[0] = X[rng.integers(X.shape[0])]
         dists = np.array(simsimd.sqeuclidean(X, centroids[0]))
+        inertia = dists.sum()
 
         if self.n_local_trials is None:
             self.n_local_trials = 2 + int(np.log(self.n_clusters))
 
         for i in range(1, self.n_clusters):
             candidates = rng.choice(
-                X.shape[0], size=self.n_local_trials, p=dists / dists.sum()
+                X.shape[0], size=self.n_local_trials, p=dists / inertia
             )
 
             current_candidates_dists = np.array(
@@ -63,9 +64,11 @@ class _KMeans:
             )
             candidates_dists = np.minimum(current_candidates_dists, dists[:, None])
 
-            best_dists = (candidates_dists.sum(axis=0)).argmin()
-            best_candidate = candidates[best_dists]
-            dists = candidates_dists[:, best_dists]
+            inertias = candidates_dists.sum(axis=0)
+            best_inertia = inertias.argmin()
+            best_candidate = candidates[best_inertia]
+            dists = candidates_dists[:, best_inertia]
+            inertia = inertias[best_inertia]
 
             centroids[i] = X[best_candidate]
 
