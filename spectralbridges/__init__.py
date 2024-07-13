@@ -213,12 +213,16 @@ class SpectralBridges:
         counts = np.array([X_centered[i].shape[0] for i in range(self.n_nodes)])
         counts = counts[None, :] + counts[:, None]
 
-        segments = kmeans.cluster_centers_[None, :] - kmeans.cluster_centers_[:, None]
-        dists = np.einsum("ijk,ijk->ij", segments, segments)
+        dists = np.array(
+            simsimd.cdist(
+                kmeans.cluster_centers_, kmeans.cluster_centers_, "sqeuclidean"
+            )
+        )
         np.fill_diagonal(dists, 1)
 
         for i in range(self.n_nodes):
-            projs = np.maximum(np.dot(X_centered[i], segments[i].T), 0)
+            segments = kmeans.cluster_centers_ - kmeans.cluster_centers_[i]
+            projs = np.maximum(np.dot(X_centered[i], segments.T), 0)
             affinity[i] = np.einsum("ij,ij->j", projs, projs)
 
         affinity = np.sqrt(affinity + affinity.T) / (np.sqrt(counts) * dists)
