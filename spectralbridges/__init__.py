@@ -82,22 +82,23 @@ class _KMeans:
         X : numpy.ndarray
             Input data to cluster.
         """
+        X_f32 = X.astype(np.float32)
         index = faiss.IndexFlatL2(X.shape[1])
         kmeans = faiss.Clustering(X.shape[1], self.n_clusters)
 
-        init_centroids = self._init_centroids(X.astype(np.float32))
+        init_centroids = self._init_centroids(X_f32)
 
         kmeans.centroids.resize(init_centroids.size)
         faiss.copy_array_to_vector(init_centroids.ravel(), kmeans.centroids)
         kmeans.niter = self.n_iter
         kmeans.min_points_per_centroid = 0
         kmeans.max_points_per_centroid = -1
-        kmeans.train(X.astype(np.float32), index)
+        kmeans.train(X_f32, index)
 
         self.cluster_centers_ = faiss.vector_to_array(kmeans.centroids).reshape(
             self.n_clusters, X.shape[1]
         )
-        self.labels_ = index.search(X.astype(np.float32), 1)[1].ravel()
+        self.labels_ = index.search(X_f32, 1)[1].ravel()
 
 
 class _SpectralClustering:
