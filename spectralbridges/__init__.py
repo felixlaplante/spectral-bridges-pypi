@@ -85,7 +85,7 @@ class _KMeans:
         index = faiss.IndexFlatL2(X.shape[1])
         kmeans = faiss.Clustering(X.shape[1], self.n_clusters)
 
-        init_centroids = self._init_centroids(X.astype(np.float16)).astype(np.float32)
+        init_centroids = self._init_centroids(X.astype(np.float32))
 
         kmeans.centroids.resize(init_centroids.size)
         faiss.copy_array_to_vector(init_centroids.ravel(), kmeans.centroids)
