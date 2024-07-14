@@ -13,7 +13,6 @@ setup(
     install_requires=[
         "numpy",
         "scipy",
-        "simsimd",
         "faiss-cpu",
     ],
     classifiers=[
