@@ -4,7 +4,7 @@ import faiss
 
 
 class _KMeans:
-    """K-means clustering using FAISS and SimSIMD.
+    """K-means clustering using FAISS.
 
     Parameters:
     -----------
