@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.sparse.csgraph import laplacian
-import simsimd
 import faiss
 
 
@@ -43,12 +42,19 @@ class _KMeans:
         self.n_local_trials = n_local_trials
         self.random_state = random_state
 
+    def _dists(self, X, y, XX):
+        yy = np.einsum("ij,ij->i", y, y)
+        return np.maximum(XX - 2 * (X @ y.T) + yy, 0)
+
     def _init_centroids(self, X):
         rng = np.random.default_rng(self.random_state)
 
         centroids = np.empty((self.n_clusters, X.shape[1]), dtype=X.dtype)
         centroids[0] = X[rng.integers(X.shape[0])]
-        dists = np.array(simsimd.sqeuclidean(X, centroids[0]))
+
+        XX = np.einsum("ij,ij->i", X, X)[:, None]
+
+        dists = self._dists(X, centroids[0:1], XX).ravel()
         inertia = dists.sum()
 
         if self.n_local_trials is None:
@@ -59,9 +65,7 @@ class _KMeans:
                 X.shape[0], size=self.n_local_trials, p=dists / inertia
             )
 
-            current_candidates_dists = np.array(
-                simsimd.cdist(X, X[candidates], "sqeuclidean")
-            )
+            current_candidates_dists = self._dists(X, X[candidates], XX)
             candidates_dists = np.minimum(current_candidates_dists, dists[:, None])
 
             inertias = candidates_dists.sum(axis=0)
@@ -213,19 +217,14 @@ class SpectralBridges:
         counts = np.array([X_centered[i].shape[0] for i in range(self.n_nodes)])
         counts = counts[None, :] + counts[:, None]
 
-        dists = np.array(
-            simsimd.cdist(
-                kmeans.cluster_centers_, kmeans.cluster_centers_, "sqeuclidean"
-            )
-        )
-        np.fill_diagonal(dists, 1)
-
         for i in range(self.n_nodes):
             segments = kmeans.cluster_centers_ - kmeans.cluster_centers_[i]
-            projs = np.maximum(X_centered[i] @ segments.T, 0)
+            dists = np.einsum("ij,ij->i", segments, segments)
+            dists[i] = 1
+            projs = np.maximum(X_centered[i] @ segments.T, 0) / dists
             affinity[i] = np.einsum("ij,ij->j", projs, projs)
 
-        affinity = np.sqrt(affinity + affinity.T) / (np.sqrt(counts) * dists)
+        affinity = np.sqrt((affinity + affinity.T) / counts)
         affinity -= 0.5 * affinity.max()
 
         q10, q90 = np.quantile(affinity, [0.1, 0.9])
