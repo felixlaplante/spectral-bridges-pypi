@@ -222,7 +222,7 @@ class SpectralBridges:
 
         for i in range(self.n_nodes):
             segments = kmeans.cluster_centers_ - kmeans.cluster_centers_[i]
-            projs = np.maximum(np.dot(X_centered[i], segments.T), 0)
+            projs = np.maximum(X_centered[i] @ segments.T, 0)
             affinity[i] = np.einsum("ij,ij->j", projs, projs)
 
         affinity = np.sqrt(affinity + affinity.T) / (np.sqrt(counts) * dists)
