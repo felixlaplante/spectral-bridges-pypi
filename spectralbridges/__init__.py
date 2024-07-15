@@ -1,6 +1,7 @@
 import numpy as np
-from scipy.sparse.csgraph import laplacian
 import faiss
+from scipy.sparse.csgraph import laplacian
+from scipy.linalg.blas import sgemm
 
 
 class _KMeans:
@@ -44,7 +45,8 @@ class _KMeans:
 
     def _dists(self, X, y, XX):
         yy = np.einsum("ij,ij->i", y, y)
-        return np.maximum(XX - 2 * (X @ y.T) + yy, 0)
+        dots = sgemm(2.0, X, y, trans_b=True)
+        return np.maximum(XX - dots + yy, 0)
 
     def _init_centroids(self, X):
         rng = np.random.default_rng(self.random_state)
@@ -61,16 +63,17 @@ class _KMeans:
             self.n_local_trials = 2 + int(np.log(self.n_clusters))
 
         for i in range(1, self.n_clusters):
-            candidates = rng.choice(
+            candidate_ids = rng.choice(
                 X.shape[0], size=self.n_local_trials, p=dists / inertia
             )
+            candidates = np.asfortranarray(X[candidate_ids])
 
-            current_candidates_dists = self._dists(X, X[candidates], XX)
+            current_candidates_dists = self._dists(X, candidates, XX)
             candidates_dists = np.minimum(current_candidates_dists, dists[:, None])
 
             inertias = candidates_dists.sum(axis=0)
             best_inertia = inertias.argmin()
-            best_candidate = candidates[best_inertia]
+            best_candidate = candidate_ids[best_inertia]
             dists = candidates_dists[:, best_inertia]
             inertia = inertias[best_inertia]
 
@@ -86,7 +89,7 @@ class _KMeans:
         X : numpy.ndarray
             Input data to cluster.
         """
-        X_f32 = X.astype(np.float32)
+        X_f32 = np.asfortranarray(X.astype(np.float32))
         index = faiss.IndexFlatL2(X.shape[1])
         kmeans = faiss.Clustering(X.shape[1], self.n_clusters)
 
@@ -210,7 +213,7 @@ class SpectralBridges:
         affinity = np.empty((self.n_nodes, self.n_nodes))
 
         X_centered = [
-            X[kmeans.labels_ == i] - kmeans.cluster_centers_[i]
+            np.asfortranarray(X[kmeans.labels_ == i] - kmeans.cluster_centers_[i])
             for i in range(self.n_nodes)
         ]
 
@@ -218,10 +221,14 @@ class SpectralBridges:
         counts = counts[None, :] + counts[:, None]
 
         for i in range(self.n_nodes):
-            segments = kmeans.cluster_centers_ - kmeans.cluster_centers_[i]
+            segments = np.asfortranarray(
+                kmeans.cluster_centers_ - kmeans.cluster_centers_[i]
+            )
             dists = np.einsum("ij,ij->i", segments, segments)
             dists[i] = 1
-            projs = np.maximum(X_centered[i] @ segments.T, 0) / dists
+            projs = (
+                np.maximum(sgemm(1.0, X_centered[i], segments, trans_b=True), 0) / dists
+            )
             affinity[i] = np.einsum("ij,ij->j", projs, projs)
 
         affinity = np.sqrt((affinity + affinity.T) / counts)
