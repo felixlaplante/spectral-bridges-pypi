@@ -45,8 +45,8 @@ class _KMeans:
 
     def _dists(self, X, y, XX):
         yy = np.einsum("ij,ij->i", y, y)
-        dots = sgemm(2.0, X, y, trans_b=True)
-        return np.maximum(XX - dots + yy, 0)
+        Xy = sgemm(2.0, X, y, trans_b=True)
+        return np.maximum(XX - Xy + yy, 0)
 
     def _init_centroids(self, X):
         rng = np.random.default_rng(self.random_state)
