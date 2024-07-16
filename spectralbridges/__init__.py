@@ -89,7 +89,7 @@ class _KMeans:
         X : numpy.ndarray
             Input data to cluster.
         """
-        X_f32 = np.asfortranarray(X.astype(np.float32))
+        X_f32 = np.array(X, dtype=np.float32, order="F")
         index = faiss.IndexFlatL2(X.shape[1])
         kmeans = faiss.Clustering(X.shape[1], self.n_clusters)
 
@@ -213,7 +213,11 @@ class SpectralBridges:
         affinity = np.empty((self.n_nodes, self.n_nodes))
 
         X_centered = [
-            np.asfortranarray(X[kmeans.labels_ == i] - kmeans.cluster_centers_[i])
+            np.array(
+                X[kmeans.labels_ == i] - kmeans.cluster_centers_[i],
+                dtype=np.float32,
+                order="F",
+            )
             for i in range(self.n_nodes)
         ]
 
