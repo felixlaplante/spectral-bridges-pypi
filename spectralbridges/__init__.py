@@ -232,7 +232,7 @@ class SpectralBridges:
             dists = np.einsum("ij,ij->i", segments, segments)
             dists[i] = 1
 
-            projs = sgemm(1.0, X_centered[i], segments, trans_b=True)
+            projs = sgemm(1.0, X_centered[i], segments, trans_b=True) / dists
             np.clip(projs, 0, None, out=projs)
 
             affinity[i] = np.einsum("ij,ij->j", projs, projs)
