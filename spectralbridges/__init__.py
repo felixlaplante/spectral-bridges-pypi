@@ -45,8 +45,9 @@ class _KMeans:
 
     def _dists(self, X, y, XX):
         yy = np.einsum("ij,ij->i", y, y)
-        Xy = sgemm(2.0, X, y, trans_b=True)
-        return np.maximum(XX - Xy + yy, 0)
+        dists = XX - sgemm(2.0, X, y, trans_b=True) + yy
+        np.clip(dists, 0, None, out=dists)
+        return dists
 
     def _init_centroids(self, X):
         rng = np.random.default_rng(self.random_state)
@@ -230,9 +231,10 @@ class SpectralBridges:
             )
             dists = np.einsum("ij,ij->i", segments, segments)
             dists[i] = 1
-            projs = (
-                np.maximum(sgemm(1.0, X_centered[i], segments, trans_b=True), 0) / dists
-            )
+
+            projs = sgemm(1.0, X_centered[i], segments, trans_b=True)
+            np.clip(projs, 0, None, out=projs)
+
             affinity[i] = np.einsum("ij,ij->j", projs, projs)
 
         affinity = np.sqrt((affinity + affinity.T) / counts)
