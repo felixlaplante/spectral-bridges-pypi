@@ -123,6 +123,8 @@ class _SpectralClustering:
     -----------
     labels_ : numpy.ndarray
         Labels of each point (index) in the affinity matrix.
+    eigvals_ : numpy.ndarray
+        The eigenvalues of the (normalized) laplacian
 
     Methods:
     --------
@@ -133,6 +135,8 @@ class _SpectralClustering:
     def __init__(self, n_clusters, random_state):
         self.n_clusters = n_clusters
         self.random_state = random_state
+        self.labels_ = None
+        self.eigvals_ = None
 
     def fit(self, affinity):
         """Fit the spectral clustering model on the affinity matrix.
@@ -144,7 +148,7 @@ class _SpectralClustering:
         """
         L = laplacian(affinity, normed=True)
 
-        eigvecs = np.linalg.eigh(L)[1]
+        self.eigvals_, eigvecs = np.linalg.eigh(L)
         eigvecs = eigvecs[:, : self.n_clusters]
         eigvecs /= np.linalg.norm(eigvecs, axis=1)[:, None]
         kmeans = _KMeans(self.n_clusters, random_state=self.random_state)
@@ -194,6 +198,8 @@ class SpectralBridges:
         self.n_iter = n_iter
         self.n_local_trials = n_local_trials
         self.random_state = random_state
+        self.cluster_centers_ = None
+        self.eigvals_ = None
 
     def fit(self, X):
         """Fit the Spectral Bridges model on the input data X.
@@ -250,6 +256,7 @@ class SpectralBridges:
         )
         spectralclustering.fit(affinity)
 
+        self.eigvals_ = spectralclustering.eigvals_
         self.cluster_centers_ = [
             kmeans.cluster_centers_[spectralclustering.labels_ == i]
             for i in range(self.n_clusters)
@@ -280,3 +287,15 @@ class SpectralBridges:
         labels = np.searchsorted(cluster_cutoffs, winners, side="right")
 
         return labels
+
+    def normalized_eigengap(self):
+        """Returns the normalized eigengap
+
+        Returns:
+        --------
+        float
+            Normalized eigengap value
+        """
+        return (
+            self.eigvals_[self.n_clusters] - self.eigvals_[self.n_clusters - 1]
+        ) / self.eigvals_[self.n_clusters]
