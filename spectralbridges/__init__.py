@@ -50,6 +50,8 @@ class _KMeans:
         return dists
 
     def _init_centroids(self, X):
+        assert np.any(np.isnan(X)) == False
+
         rng = np.random.default_rng(self.random_state)
 
         centroids = np.empty((self.n_clusters, X.shape[1]), dtype=X.dtype)
@@ -137,6 +139,7 @@ class _SpectralClustering:
         self.random_state = random_state
         self.labels_ = None
         self.eigvals_ = None
+        self.ngap_ = None
 
     def fit(self, affinity):
         """Fit the spectral clustering model on the affinity matrix.
@@ -154,6 +157,9 @@ class _SpectralClustering:
         kmeans = _KMeans(self.n_clusters, random_state=self.random_state)
         kmeans.fit(eigvecs)
 
+        self.ngap_ = (
+            self.eigvals_[self.n_clusters] - self.eigvals_[self.n_clusters - 1]
+        ) / self.eigvals_[self.n_clusters]
         self.labels_ = kmeans.labels_
 
 
@@ -186,12 +192,19 @@ class SpectralBridges:
     def __init__(
         self,
         n_clusters,
-        n_nodes,
+        n_nodes=None,
         M=1e4,
         n_iter=20,
         n_local_trials=None,
         random_state=None,
     ):
+        assert n_clusters > 0
+        if n_nodes is not None:
+            assert n_nodes > n_clusters
+        assert M >= 1
+        if n_local_trials is not None:
+            assert n_local_trials > 0
+
         self.n_clusters = n_clusters
         self.n_nodes = n_nodes
         self.M = M
@@ -200,6 +213,7 @@ class SpectralBridges:
         self.random_state = random_state
         self.cluster_centers_ = None
         self.eigvals_ = None
+        self.ngap_ = None
 
     def fit(self, X):
         """Fit the Spectral Bridges model on the input data X.
@@ -209,6 +223,8 @@ class SpectralBridges:
         X : numpy.ndarray
             Input data to cluster.
         """
+        assert self.n_nodes > self.n_clusters
+
         kmeans = _KMeans(
             self.n_nodes,
             n_iter=self.n_iter,
@@ -257,6 +273,7 @@ class SpectralBridges:
         spectralclustering.fit(affinity)
 
         self.eigvals_ = spectralclustering.eigvals_
+        self.ngap_ = spectralclustering.ngap_
         self.cluster_centers_ = [
             kmeans.cluster_centers_[spectralclustering.labels_ == i]
             for i in range(self.n_clusters)
@@ -288,77 +305,72 @@ class SpectralBridges:
 
         return labels
 
-    def normalized_eigengap(self):
-        """Returns the normalized eigengap
+    def fit_select(self, X, n_nodes_range, n_redo=10):
+        """
+        Selects and fits the best model from a range of possible node counts
+        by evaluating the mean normalized eigengap (ngap) for each candidate.
+
+        For each `n_nodes` in `n_nodes_range`, multiple models are fit to the data,
+        and the one with the highest mean normalized eigengap over `n_redo` runs
+        is selected. The method then updates the current instance to use the
+        attributes of the best candidate model.
+
+        Parameters:
+        -----------
+        X : numpy.ndarray
+            Input data to cluster.
+        n_nodes_range : iterable of int
+            Range of values for the number of nodes to evaluate.
+        n_redo : int, optional (default=10)
+            Number of times to repeat the model fitting for each `n_nodes`
+            value to ensure stable eigengap evaluation.
 
         Returns:
         --------
-        float
-            Normalized eigengap value
+        mean_ngaps : dict
+            Dictionary where keys are values from `n_nodes_range` and values
+            are the corresponding mean normalized eigengap scores.
+
+        Notes:
+        ------
+        After the method completes, the instance attributes are updated with
+        those of the model that achieved the highest mean normalized eigengap
+        across all evaluated node counts.
         """
-        return (
-            self.eigvals_[self.n_clusters] - self.eigvals_[self.n_clusters - 1]
-        ) / self.eigvals_[self.n_clusters]
+        best_candidate = None
+        best_mean_ngap = -1
+        mean_ngaps = {}
 
+        for n_nodes in n_nodes_range:
+            candidate = None
+            cum_ngap = 0
 
-def best_n_nodes(
-    X,
-    n_clusters,
-    n_nodes_range,
-    n_redo=10,
-    M=1e4,
-    n_iter=20,
-    n_local_trials=None,
-    random_state=None,
-):
-    """Finds the optimal number of nodes the Spectral Bridges model on the input data X.
+            for _ in range(n_redo):
+                model = SpectralBridges(
+                    n_clusters=self.n_clusters,
+                    n_nodes=n_nodes,
+                    M=self.M,
+                    n_iter=self.n_iter,
+                    n_local_trials=self.n_local_trials,
+                    random_state=self.random_state,
+                )
+                model.fit(X)
 
-    Parameters:
-    -----------
-    X : numpy.ndarray
-        Input data to cluster.
-    n_clusters : int
-        The number of clusters to form.
-    n_nodes_range : (list of int)
-        A list of integer values representing the number of nodes to test.
-    M : float, optional, default=1e4
-        Scaling parameter for affinity matrix computation.
-    n_iter : int, optional, default=20
-        Number of iterations to run the k-means algorithm.
-    n_local_trials : int or None, optional, default=None
-        Number of seeding trials for centroids initialization.
-    random_state : int or None, optional, default=None
-        Determines random number generation for centroid initialization.
+                cum_ngap += model.ngap_
 
-    Returns:
-    --------
-    tuple: A tuple containing:
-        - SpectralBridges object (best fitted model)
-        - int: The optimal number of nodes.
-        - float: The mean value of the best normalized eigengap.
-    """
-    models = []
-    normalized_eigengaps = np.zeros(len(n_nodes_range))
-    for i, n_nodes in enumerate(n_nodes_range):
-        for _ in range(n_redo):
-            model = SpectralBridges(
-                n_clusters=n_clusters,
-                n_nodes=n_nodes,
-                M=M,
-                n_iter=n_iter,
-                n_local_trials=n_local_trials,
-                random_state=random_state,
-            )
-            model.fit(X)
-            models.append(model)
+                if candidate is None or model.ngap_ > candidate.ngap_:
+                    candidate = model
 
-            normalized_eigengaps[i] += model.normalized_eigengap()
+                if self.random_state is not None:
+                    self.random_state += 1
 
-            if random_state is not None:
-                random_state += 1
+            mean_ngap = cum_ngap / n_redo
+            mean_ngaps[n_nodes] = mean_ngap
 
-    idx = np.argmax(normalized_eigengaps)
-    best_model = models[idx]
-    best_n_nodes = n_nodes_range[idx]
-    best_mean_normalized_eigengap = normalized_eigengaps[idx] / n_redo
-    return (best_model, best_n_nodes, best_mean_normalized_eigengap)
+            if mean_ngap > best_mean_ngap:
+                best_candidate = candidate
+                best_mean_ngap = mean_ngap
+
+        self.__dict__.update(best_candidate.__dict__)
+
+        return mean_ngaps
