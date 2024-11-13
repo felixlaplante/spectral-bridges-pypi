@@ -300,20 +300,44 @@ class SpectralBridges:
             self.eigvals_[self.n_clusters] - self.eigvals_[self.n_clusters - 1]
         ) / self.eigvals_[self.n_clusters]
 
-def find_n_nodes(
+def opt_n_nodes(
     X, 
     n_clusters,
     n_nodes_range,
-    n_redo=5,
+    n_redo=10,
     M=1e4,
     n_iter=20,
     n_local_trials=None,
     random_state=None,
 ):
+    """Finds the optimal number of nodes the Spectral Bridges model on the input data X.
+
+        Parameters:
+        -----------
+        X : numpy.ndarray
+            Input data to cluster.
+        n_clusters : int
+            The number of clusters to form.
+        n_nodes : int
+            Number of nodes or initial clusters.
+        M : float, optional, default=1e4
+            Scaling parameter for affinity matrix computation.
+        n_iter : int, optional, default=20
+            Number of iterations to run the k-means algorithm.
+        n_local_trials : int or None, optional, default=None
+            Number of seeding trials for centroids initialization.
+        random_state : int or None, optional, default=None
+            Determines random number generation for centroid initialization.
+
+        Returns:
+        --------
+        
+            Predicted cluster indices for each input data point.
+    """
     normalized_eigengaps = np.zeros(len(n_nodes_range))
-    for n_nodes in n_nodes_range:
-        for i range(n_redo):
-            model = SpecralBridges(n_clusters=n_clusters, 
+    for i, n_nodes in enumerate(n_nodes_range):
+        for _ in range(n_redo):
+            model = SpectralBridges(n_clusters=n_clusters, 
                                    n_nodes=n_nodes, 
                                    M=M, 
                                    n_iter=n_iter, 
@@ -322,13 +346,14 @@ def find_n_nodes(
                                   )
             model.fit(X)
         
-            normalized_eigengaps[n_nodes] += model.normalized_eigengap()
+            normalized_eigengaps[i] += model.normalized_eigengap()
 
             if random_state is not None:
                 random_state += 1
 
-    optimal_n_nodes = np.argmax(normalized_eigengaps)
-    optimal_normalized_eigengap = normalized_eigengaps[optimal_n_nodes] / n_redo
-    return optimal_n_nodes, optimal_normalized_eigengap
+    idx = np.argmax(normalized_eigengaps)
+    opt_n_nodes = n_nodes_range[idx]
+    mean_opt_normalized_eigengap = normalized_eigengaps[idx] / n_redo
+    return opt_n_nodes, mean_opt_normalized_eigengap
         
     
