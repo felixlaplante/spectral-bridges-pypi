@@ -299,3 +299,25 @@ class SpectralBridges:
         return (
             self.eigvals_[self.n_clusters] - self.eigvals_[self.n_clusters - 1]
         ) / self.eigvals_[self.n_clusters]
+
+def find_n_nodes(
+    X, 
+    n_clusters,
+    n_nodes_range,
+    n_redo=5,
+    M=1e4,
+    n_iter=20,
+    n_local_trials=None,
+    random_state=None,
+):
+    normalized_eigengaps = np.zeros(len(n_nodes_range))
+    for n_nodes in n_nodes_range:
+        for i range(n_redo):
+            model = SpecralBridges()
+        
+            normalized_eigengaps[n_nodes] += 
+
+            if random_state is not None:
+                random_state = hash(random_state)
+        
+    
