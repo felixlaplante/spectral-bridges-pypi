@@ -280,7 +280,7 @@ class SpectralBridges:
             for i in range(self.n_clusters)
         ]
 
-    def fit_select(self, X, n_nodes_range, n_redo=10):
+    def fit_select(self, X, n_nodes_range=None, n_redo=10):
         """
         Selects and fits the best model from a range of possible node counts
         by evaluating the mean normalized eigengap (ngap) for each candidate.
@@ -294,7 +294,7 @@ class SpectralBridges:
         -----------
         X : numpy.ndarray
             Input data to cluster.
-        n_nodes_range : iterable of int
+        n_nodes_range : iterable of int or None (default=None)
             Range of values for the number of nodes to evaluate.
         n_redo : int, optional (default=10)
             Number of times to repeat the model fitting for each `n_nodes`
@@ -312,8 +312,9 @@ class SpectralBridges:
         those of the model that achieved the highest mean normalized eigengap
         across all evaluated node counts.
         """
-        if isinstance(n_nodes_range, int):
-            n_nodes_range = [n_nodes_range]
+        if n_nodes_range is None:
+            assert self.n_nodes is not None
+            n_nodes_range = [self.n_nodes]
 
         best_candidate = None
         best_mean_ngap = -1
