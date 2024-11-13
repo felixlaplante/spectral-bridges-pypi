@@ -32,24 +32,34 @@ import numpy as np
 np.random.seed(0)
 X = np.random.rand(100, 10)  # Replace with your dataset
 
-# Define range of nodes to evaluate
+# Initialize and fit Spectral Bridges (with a specified number of nodes if needed) and random seed
+model = sb.SpectralBridges(n_clusters=5, random_state=42)
+
+# Define range of nodes to evaluate, iterable or a single int
 n_nodes_range = [10, 15, 20]
 
-# Find the optimal number of nodes
-optimal_model, best_n_nodes_, best_normalized_eigengap_ = sb.best_nodes(
-    X, n_clusters=5, n_nodes_range=n_nodes_range
-)
+# Find the optimal number of nodes for a given value of clusters
+# Modifies the instance's attributes, return a dict
+mean_ngaps = model.fit_select(X, n_nodes_range) 
 
-print("Optimal number of nodes:", best_n_nodes_)
-print("Best mean normalized eigengap:", best_normalized_eigengap_)
-
-# Initialize and fit Spectral Bridges with a specified number of nodes and random seed
-custom_model = sb.SpectralBridges(n_clusters=5, n_nodes=12, random_state=42)
-custom_model.fit(X)
+print("Optimal number of nodes:", model.n_nodes)
+print("Dict of mean normalized eigengaps:", mean_ngaps)
 
 # Predict clusters for new data points
 new_data = np.random.rand(20, 10)  # Replace with new data
-predicted_clusters = custom_model.predict(new_data)
+predicted_clusters = model.predict(new_data)
 
 print("Predicted clusters:", predicted_clusters)
+
+# With a custom number of nodes
+custom_model = sb.SpectralBridges(n_clusters=5, n_nodes=12)
+
+# Fit the model
+custom_model.fit(X)
+
+# Predict the same way...
+
+custom_predicted_clusters = custom_model.predict(new_data)
+
+print("Predicted clusters:", custom_predicted_clusters)
 ```
