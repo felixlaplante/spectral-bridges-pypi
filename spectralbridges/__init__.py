@@ -316,6 +316,9 @@ class SpectralBridges:
             assert self.n_nodes is not None
             n_nodes_range = [self.n_nodes]
 
+        rng = np.random.default_rng(self.random_state)
+        max_int = np.iinfo(np.int32).max
+
         best_candidate = None
         best_mean_ngap = -1
         mean_ngaps = {}
@@ -340,8 +343,7 @@ class SpectralBridges:
                 if candidate is None or model.ngap_ > candidate.ngap_:
                     candidate = model
 
-                if self.random_state is not None:
-                    self.random_state = hash(str(self.random_state))
+                self.random_state = rng.integers(max_int + 1)
 
             mean_ngap = cum_ngap / n_redo
             mean_ngaps[n_nodes] = mean_ngap
