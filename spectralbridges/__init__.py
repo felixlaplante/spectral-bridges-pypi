@@ -279,32 +279,6 @@ class SpectralBridges:
             for i in range(self.n_clusters)
         ]
 
-    def predict(self, x):
-        """Predict the nearest cluster index for each input data point x.
-
-        Parameters:
-        -----------
-        x : numpy.ndarray
-            Input data points to predict clusters.
-
-        Returns:
-        --------
-        numpy.ndarray
-            Predicted cluster indices for each input data point.
-        """
-        cluster_centers = np.vstack(self.cluster_centers_)
-        cluster_cutoffs = np.cumsum(
-            [cluster.shape[0] for cluster in self.cluster_centers_]
-        )
-
-        index = faiss.IndexFlatL2(x.shape[1])
-        index.add(cluster_centers.astype(np.float32))
-        winners = index.search(x.astype(np.float32), 1)[1].ravel()
-
-        labels = np.searchsorted(cluster_cutoffs, winners, side="right")
-
-        return labels
-
     def fit_select(self, X, n_nodes_range, n_redo=10):
         """
         Selects and fits the best model from a range of possible node counts
@@ -377,3 +351,31 @@ class SpectralBridges:
         self.__dict__.update(best_candidate.__dict__)
 
         return mean_ngaps
+    
+    def predict(self, x):
+        """Predict the nearest cluster index for each input data point x.
+
+        Parameters:
+        -----------
+        x : numpy.ndarray
+            Input data points to predict clusters.
+
+        Returns:
+        --------
+        numpy.ndarray
+            Predicted cluster indices for each input data point.
+        """
+        assert(np.any(np.isnan(x)) == False)
+        
+        cluster_centers = np.vstack(self.cluster_centers_)
+        cluster_cutoffs = np.cumsum(
+            [cluster.shape[0] for cluster in self.cluster_centers_]
+        )
+
+        index = faiss.IndexFlatL2(x.shape[1])
+        index.add(cluster_centers.astype(np.float32))
+        winners = index.search(x.astype(np.float32), 1)[1].ravel()
+
+        labels = np.searchsorted(cluster_cutoffs, winners, side="right")
+
+        return labels
