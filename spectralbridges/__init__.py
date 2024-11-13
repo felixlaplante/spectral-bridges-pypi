@@ -341,7 +341,7 @@ class SpectralBridges:
                     candidate = model
 
                 if self.random_state is not None:
-                    self.random_state += 1
+                    self.random_state = hash(str(self.random_state))
 
             mean_ngap = cum_ngap / n_redo
             mean_ngaps[n_nodes] = mean_ngap
