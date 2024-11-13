@@ -333,9 +333,11 @@ def best_n_nodes(
     Returns:
     --------
     tuple: A tuple containing:
+        - SpectralBridges object (best fitted model)
         - int: The optimal number of nodes.
         - float: The mean value of the best normalized eigengap.
     """
+    models = []
     normalized_eigengaps = np.zeros(len(n_nodes_range))
     for i, n_nodes in enumerate(n_nodes_range):
         for _ in range(n_redo):
@@ -348,6 +350,7 @@ def best_n_nodes(
                 random_state=random_state,
             )
             model.fit(X)
+            models.append(model)
 
             normalized_eigengaps[i] += model.normalized_eigengap()
 
@@ -355,6 +358,7 @@ def best_n_nodes(
                 random_state += 1
 
     idx = np.argmax(normalized_eigengaps)
+    best_model = models[idx]
     best_n_nodes = n_nodes_range[idx]
     best_mean_normalized_eigengap = normalized_eigengaps[idx] / n_redo
-    return (best_n_nodes, best_mean_normalized_eigengap)
+    return (best_model, best_n_nodes, best_mean_normalized_eigengap)
