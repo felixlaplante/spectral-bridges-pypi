@@ -202,6 +202,7 @@ class SpectralBridges:
         if n_nodes is not None:
             assert n_nodes > n_clusters
         assert M >= 1
+        assert n_iter > 0
         if n_local_trials is not None:
             assert n_local_trials > 0
 
@@ -351,7 +352,7 @@ class SpectralBridges:
         self.__dict__.update(best_candidate.__dict__)
 
         return mean_ngaps
-    
+
     def predict(self, x):
         """Predict the nearest cluster index for each input data point x.
 
@@ -365,8 +366,8 @@ class SpectralBridges:
         numpy.ndarray
             Predicted cluster indices for each input data point.
         """
-        assert(np.any(np.isnan(x)) == False)
-        
+        assert np.any(np.isnan(x)) == False
+
         cluster_centers = np.vstack(self.cluster_centers_)
         cluster_cutoffs = np.cumsum(
             [cluster.shape[0] for cluster in self.cluster_centers_]
