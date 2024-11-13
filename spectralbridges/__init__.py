@@ -313,11 +313,22 @@ def find_n_nodes(
     normalized_eigengaps = np.zeros(len(n_nodes_range))
     for n_nodes in n_nodes_range:
         for i range(n_redo):
-            model = SpecralBridges()
+            model = SpecralBridges(n_clusters=n_clusters, 
+                                   n_nodes=n_nodes, 
+                                   M=M, 
+                                   n_iter=n_iter, 
+                                   n_local_trials=n_local_trials, 
+                                   random_state=random_state
+                                  )
+            model.fit(X)
         
-            normalized_eigengaps[n_nodes] += 
+            normalized_eigengaps[n_nodes] += model.normalized_eigengap()
 
             if random_state is not None:
-                random_state = hash(random_state)
+                random_state += 1
+
+    optimal_n_nodes = np.argmax(normalized_eigengaps)
+    optimal_normalized_eigengap = normalized_eigengaps[optimal_n_nodes] / n_redo
+    return optimal_n_nodes, 
         
     
