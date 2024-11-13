@@ -25,15 +25,22 @@ pip install spectral-bridges
 ### Example
 
 ```python
-from spectralbridges import SpectralBridges
+import spectralbridges as sb
 import numpy as np
 
 # Generate sample data
 np.random.seed(0)
 X = np.random.rand(100, 10)  # Replace with your dataset
 
+# Find the optimal value of n_nodes
+
+n_nodes_range = (10, 15, 20)
+n_nodes, normalized_eigengap = sb.best_nodes(
+    X, n_clusters=5, n_nodes_range=n_nodes_range
+)
+
 # Initialize and fit Spectral Bridges
-model = SpectralBridges(n_clusters=5, n_nodes=10, random_state=42)
+model = sb.SpectralBridges(n_clusters=5, n_nodes=n_nodes, random_state=42)
 model.fit(X)
 
 # Predict clusters for new data points
