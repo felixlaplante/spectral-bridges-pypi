@@ -39,7 +39,7 @@ model = sb.SpectralBridges(n_clusters=5, random_state=42)
 n_nodes_range = [10, 15, 20]
 
 # Find the optimal number of nodes for a given value of clusters
-# Modifies the instance's attributes, return a dict
+# Modifies the instance attributes, return a dict
 mean_ngaps = model.fit_select(X, n_nodes_range) 
 
 print("Optimal number of nodes:", model.n_nodes)
