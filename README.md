@@ -41,6 +41,7 @@ n_nodes_range = [10, 15, 20]
 
 # Find the optimal number of nodes for a given value of clusters
 # Modifies the instance attributes, returns a dict
+# If n_nodes_range is None, then the model selects using self.n_nodes if not None
 mean_ngaps = model.fit_select(X, n_nodes_range) 
 
 print("Optimal number of nodes:", model.n_nodes)
