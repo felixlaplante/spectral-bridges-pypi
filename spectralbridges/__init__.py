@@ -300,7 +300,7 @@ class SpectralBridges:
             self.eigvals_[self.n_clusters] - self.eigvals_[self.n_clusters - 1]
         ) / self.eigvals_[self.n_clusters]
 
-def opt_n_nodes(
+def best_n_nodes(
     X, 
     n_clusters,
     n_nodes_range,
@@ -331,8 +331,9 @@ def opt_n_nodes(
 
         Returns:
         --------
-        
-            Predicted cluster indices for each input data point.
+        tuple: A tuple containing:
+            - int: The optimal number of nodes.
+            - float: The mean value of the best normalized eigengap.
     """
     normalized_eigengaps = np.zeros(len(n_nodes_range))
     for i, n_nodes in enumerate(n_nodes_range):
@@ -352,8 +353,8 @@ def opt_n_nodes(
                 random_state += 1
 
     idx = np.argmax(normalized_eigengaps)
-    opt_n_nodes = n_nodes_range[idx]
-    mean_opt_normalized_eigengap = normalized_eigengaps[idx] / n_redo
-    return opt_n_nodes, mean_opt_normalized_eigengap
+    best_n_nodes = n_nodes_range[idx]
+    best_mean_normalized_eigengap = normalized_eigengaps[idx] / n_redo
+    return (best_n_nodes, best_mean_normalized_eigengap)
         
     
