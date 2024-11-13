@@ -300,8 +300,9 @@ class SpectralBridges:
             self.eigvals_[self.n_clusters] - self.eigvals_[self.n_clusters - 1]
         ) / self.eigvals_[self.n_clusters]
 
+
 def best_n_nodes(
-    X, 
+    X,
     n_clusters,
     n_nodes_range,
     n_redo=10,
@@ -312,41 +313,42 @@ def best_n_nodes(
 ):
     """Finds the optimal number of nodes the Spectral Bridges model on the input data X.
 
-        Parameters:
-        -----------
-        X : numpy.ndarray
-            Input data to cluster.
-        n_clusters : int
-            The number of clusters to form.
-        n_nodes : int
-            Number of nodes or initial clusters.
-        M : float, optional, default=1e4
-            Scaling parameter for affinity matrix computation.
-        n_iter : int, optional, default=20
-            Number of iterations to run the k-means algorithm.
-        n_local_trials : int or None, optional, default=None
-            Number of seeding trials for centroids initialization.
-        random_state : int or None, optional, default=None
-            Determines random number generation for centroid initialization.
+    Parameters:
+    -----------
+    X : numpy.ndarray
+        Input data to cluster.
+    n_clusters : int
+        The number of clusters to form.
+    n_nodes_range : (list of int)
+        A list of integer values representing the number of nodes to test.
+    M : float, optional, default=1e4
+        Scaling parameter for affinity matrix computation.
+    n_iter : int, optional, default=20
+        Number of iterations to run the k-means algorithm.
+    n_local_trials : int or None, optional, default=None
+        Number of seeding trials for centroids initialization.
+    random_state : int or None, optional, default=None
+        Determines random number generation for centroid initialization.
 
-        Returns:
-        --------
-        tuple: A tuple containing:
-            - int: The optimal number of nodes.
-            - float: The mean value of the best normalized eigengap.
+    Returns:
+    --------
+    tuple: A tuple containing:
+        - int: The optimal number of nodes.
+        - float: The mean value of the best normalized eigengap.
     """
     normalized_eigengaps = np.zeros(len(n_nodes_range))
     for i, n_nodes in enumerate(n_nodes_range):
         for _ in range(n_redo):
-            model = SpectralBridges(n_clusters=n_clusters, 
-                                   n_nodes=n_nodes, 
-                                   M=M, 
-                                   n_iter=n_iter, 
-                                   n_local_trials=n_local_trials, 
-                                   random_state=random_state
-                                  )
+            model = SpectralBridges(
+                n_clusters=n_clusters,
+                n_nodes=n_nodes,
+                M=M,
+                n_iter=n_iter,
+                n_local_trials=n_local_trials,
+                random_state=random_state,
+            )
             model.fit(X)
-        
+
             normalized_eigengaps[i] += model.normalized_eigengap()
 
             if random_state is not None:
@@ -356,5 +358,3 @@ def best_n_nodes(
     best_n_nodes = n_nodes_range[idx]
     best_mean_normalized_eigengap = normalized_eigengaps[idx] / n_redo
     return (best_n_nodes, best_mean_normalized_eigengap)
-        
-    
