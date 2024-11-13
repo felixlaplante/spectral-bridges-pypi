@@ -329,6 +329,6 @@ def find_n_nodes(
 
     optimal_n_nodes = np.argmax(normalized_eigengaps)
     optimal_normalized_eigengap = normalized_eigengaps[optimal_n_nodes] / n_redo
-    return optimal_n_nodes, 
+    return optimal_n_nodes, optimal_normalized_eigengap
         
     
