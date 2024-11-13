@@ -337,6 +337,9 @@ class SpectralBridges:
         those of the model that achieved the highest mean normalized eigengap
         across all evaluated node counts.
         """
+        if isinstance(A, int):
+            n_nodes_range = [n_nodes_range]
+        
         best_candidate = None
         best_mean_ngap = -1
         mean_ngaps = {}
