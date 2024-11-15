@@ -172,6 +172,8 @@ class SpectralBridges:
         The number of clusters to form.
     n_nodes : int
         Number of nodes or initial clusters.
+    p : float, optional, defulat=2
+        Power of the alpha_i
     M : float, optional, default=1e4
         Scaling parameter for affinity matrix computation.
     n_iter : int, optional, default=20
@@ -193,6 +195,7 @@ class SpectralBridges:
         self,
         n_clusters,
         n_nodes=None,
+        p=2,
         M=1e4,
         n_iter=20,
         n_local_trials=None,
@@ -201,6 +204,7 @@ class SpectralBridges:
         assert n_clusters > 0
         if n_nodes is not None:
             assert n_nodes > n_clusters
+        assert p >= 1
         assert M >= 1
         assert n_iter > 0
         if n_local_trials is not None:
@@ -208,6 +212,7 @@ class SpectralBridges:
 
         self.n_clusters = n_clusters
         self.n_nodes = n_nodes
+        self.p = p
         self.M = M
         self.n_iter = n_iter
         self.n_local_trials = n_local_trials
@@ -255,12 +260,13 @@ class SpectralBridges:
             dists = np.einsum("ij,ij->i", segments, segments)
             dists[i] = 1
 
-            projs = sgemm(1.0, X_centered[i], segments, trans_b=True) / dists
-            np.clip(projs, 0, None, out=projs)
+            projs = sgemm(1.0, X_centered[i], segments, trans_b=True)
+            np.clip(projs / dists, 0, None, out=projs)
+            projs = np.power(projs, self.p)
 
-            affinity[i] = np.einsum("ij,ij->j", projs, projs)
+            affinity[i] = projs.sum(axis=0)
 
-        affinity = np.sqrt((affinity + affinity.T) / counts)
+        affinity = np.power((affinity + affinity.T) / counts, 1 / self.p)
         affinity -= 0.5 * affinity.max()
 
         q10, q90 = np.quantile(affinity, [0.1, 0.9])
@@ -331,6 +337,7 @@ class SpectralBridges:
                 model = SpectralBridges(
                     n_clusters=self.n_clusters,
                     n_nodes=n_nodes,
+                    p=self.p,
                     M=self.M,
                     n_iter=self.n_iter,
                     n_local_trials=self.n_local_trials,
