@@ -204,7 +204,7 @@ class SpectralBridges:
         assert n_clusters > 0
         if n_nodes is not None:
             assert n_nodes > n_clusters
-        assert p != 0
+        assert p > 0
         assert M >= 1
         assert n_iter > 0
         if n_local_trials is not None:
