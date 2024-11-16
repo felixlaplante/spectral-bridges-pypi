@@ -54,7 +54,7 @@ predicted_clusters = model.predict(new_data)
 print("Predicted clusters:", predicted_clusters)
 
 # With a custom number of nodes
-custom_model = sb.SpectralBridges(n_clusters=5, n_nodes=12)
+custom_model = sb.SpectralBridges(n_clusters=5, n_nodes=12, p=1) # And a p-bridge affinity
 
 # Fit the model
 custom_model.fit(X)
