@@ -26,7 +26,7 @@ pip install spectral-bridges
 ### Example
 
 ```python
-import spectralbridges as sb
+from spectralbridges import SpectralBridges
 import numpy as np
 
 # Generate sample data
@@ -34,9 +34,9 @@ np.random.seed(0)
 X = np.random.rand(100, 10)  # Replace with your dataset
 
 # Initialize and fit Spectral Bridges (with a specified number of nodes if needed) and random seed
-model = sb.SpectralBridges(n_clusters=5, random_state=42)
+model = SpectralBridges(n_clusters=5, random_state=42)
 
-# Define range of nodes to evaluate, iterable or a single int
+# Define range of nodes to evaluate, should be an iterable of integers, or None if n_nodes is already set.
 n_nodes_range = [10, 15, 20]
 
 # Find the optimal number of nodes for a given value of clusters
@@ -54,7 +54,7 @@ predicted_clusters = model.predict(new_data)
 print("Predicted clusters:", predicted_clusters)
 
 # With a custom number of nodes
-custom_model = sb.SpectralBridges(n_clusters=5, n_nodes=12, p=1) # And a p-bridge affinity
+custom_model = SpectralBridges(n_clusters=5, n_nodes=12, p=1) # And a p-bridge affinity
 
 # Fit the model
 custom_model.fit(X)
