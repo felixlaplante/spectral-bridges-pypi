@@ -42,6 +42,8 @@ class _KMeans:
         self.n_iter = n_iter
         self.n_local_trials = n_local_trials
         self.random_state = random_state
+        self.cluster_centers_ = None
+        self.labels_ = None
 
     def _dists(self, X, y, XX):
         yy = np.einsum("ij,ij->i", y, y)
